@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>บันทึกข้อมูล</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              clifford: "#da373d",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: beige;
+        padding: 20px;
+      }
+      .box {
+        max-width: 600px;
+        margin: 0px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0px 15px 0px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      /* button {
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      } */
+      .btn-add {
+        background-color: #c4af50;
+      }
+      .btn-update {
+        background-color: #2196f3;
+      }
+      .btn-add:hover {
+        background-color: #eed773;
+      }
+      .btn-cancel {
+        background-color: #999;
+      }
+      .btn-cancel:hover {
+        background-color: #b1b0b0;
+      }
+      table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+      }
+      .th,
+      td {
+        padding: 10px;
+        text-align: left;
+        border: 1px solid #ddd;
+      }
+      .th {
+        background-color: #c4af50;
+        color: white;
+      }
+      tr:hover {
+        background-color: #f5f5f5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1 class="text-4xl text-green-500 font-bold text-center">PK Teacher</h1>
+      <form id="form">
+        <input type="hidden" id="rowId" />
+        <label>ชื่อ-นามสกุล</label>
+        <input type="text" id="name" class="py-1 px-2" />
+        <label for="">ค่าเรียน</label>
+        <input type="number" id="money" class="py-1 px-2" />
+        <label for="">เบอร์โทร</label>
+        <input type="tel" id="phone" class="py-1 px-2" />
+        <button
+          type="submit"
+          class="btn-add mt-3 px-3 py-2 rounded"
+          id="submitBtn"
+        >
+          เพิ่มข้อมูล
+        </button>
+        <button
+          type="button"
+          id="loadingBtn"
+          style="display: none"
+          class="mt-3 px-3 py-2 bg-yellow-500 rounded"
+        >
+          กำลังบันทึก
+        </button>
+        <button
+          type="button"
+          class="btn-cancel"
+          id="cancelBtn"
+          style="display: none"
+        >
+          ยกเลิก
+        </button>
+      </form>
+      <div>
+        <img class="mx-auto shadow-xl rounded-xl " src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QR">
+      </div>
+      <table id="table">
+        <thead>
+          <tr>
+            <th>ชื่อ</th>
+            <th>ค่าเรียน</th>
+            <th>เบอร์โทร</th>
+            <th>จัดการ</th>
+          </tr>
+          <!-- ${}  -->
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <script>
+      // ลิ้งเชื่อมต่อฐานข้อมูล
+      const url =
+        "https://script.google.com/macros/s/AKfycbyPr_yhfnlOukC0mDo4ZVFaBC9fQY1N3USqc8L5Q3o15i6HqJPh_tOkNdjUW_UXOSOo/exec";
+      document.getElementById("form").onsubmit = function (e) {
+        e.preventDefault();
+        document.getElementById("submitBtn").style.display = "none";
+        document.getElementById("loadingBtn").style.display = "block";
+        const rowId = document.getElementById("rowId").value;
+        const data = {
+          name: document.getElementById("name").value,
+          money: document.getElementById("money").value,
+          phone: document.getElementById("phone").value,
+        };
+        if (rowId) {
+          data.rowId = rowId;
+          data.action = "update";
+        } else {
+          data.action = "create";
+        }
+
+        fetch(url, {
+          method: "POST",
+          body: JSON.stringify(data),
+        }).then(() => {
+          // alert(); // if แบบสั้น หรือ ternary (ข้อมูลเงื่่อนไข? เป็นจริง:เป็นเท็จ)
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: rowId ? "แก้ไขสำเร็จ" : "เพิ่มข้อมูลสำเร็จ",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("form").reset();
+          document.getElementById("rowId").value = "";
+          document.getElementById("submitBtn").style.display = "block";
+          document.getElementById("loadingBtn").style.display = "none";
+          document.getElementById("submitBtn").textContent = "เพิ่มข้อมูล";
+          document.getElementById("submitBtn").className =
+            "btn-add mt-3 px-3 py-2 rounded";
+          loadData();
+        });
+      };
+
+      function loadData() {
+        fetch(url)
+          .then((res) => res.json())
+          .then((data) => {
+            let html = "";
+            data.forEach((row) => {
+              // บวกทบ +=
+              html += `
+            <tr>
+            <td>${row.name}</td>
+            <td>${row.money}</td>
+            <td>${row.phone}</td>
+            <td>
+              <button onclick='editRow(${JSON.stringify(row)})' class="bg-yellow-500 px-2 py-1 rounded text-white">แก้ไข</button>
+              <button onclick='deleteRow(${row.rowId})' class="bg-red-500 px-2 py-1 rounded text-white">ลบ</button>
+              </td>
+          </tr>
+            `;
+              // console.log(row.name)
+              // console.log(row.email)
+              // console.log(row.phone)
+            });
+            document.getElementById("tbody").innerHTML = html;
+          });
+      }
+
+      function editRow(row) {
+        document.getElementById("rowId").value = row.rowId;
+        document.getElementById("name").value = row.name;
+        document.getElementById("money").value = row.money;
+        document.getElementById("phone").value = row.phone;
+        document.getElementById("submitBtn").textContent = "บันทึกการแก้ไข";
+        document.getElementById("submitBtn").className =
+          "btn-update mt-3 px-3 py-2 rounded";
+      }
+
+      function deleteRow(rowId) {
+        Swal.fire({
+          title: "แน่ใจหรือไม่?",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#3085d6",
+          confirmButtonText: "ลบเลย",
+          cancelButtonText: "ยกเลิก",
+        }).then((result) => {
+          if (!result.isConfirmed) return;
+
+          fetch(url, {
+            method: "POST",
+            mode: "cors", // ยังคงไว้ แต่ไม่ช่วยมาก
+            redirect: "follow",
+            headers: {
+              "Content-Type": "text/plain;charset=UTF-8", // ← เปลี่ยนตรงนี้สำคัญมาก!
+            },
+            body: JSON.stringify({ action: "delete", rowId: Number(rowId) }),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                return response.text().then((text) => {
+                  throw new Error(text || response.statusText);
+                });
+              }
+              return response.text(); // GAS มักคืน text ไม่ใช่ json เสมอไป
+            })
+            .then((text) => {
+              console.log("Response from delete:", text);
+              Swal.fire("ลบสำเร็จ", "", "success");
+              loadData();
+            })
+            .catch((err) => {
+              console.error("Delete error:", err);
+              Swal.fire(
+                "ลบไม่สำเร็จ",
+                err.message || "กรุณาตรวจสอบการเชื่อมต่อ",
+                "error",
+              );
+            });
+        });
+      }
+      loadData();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  </body>
+</html>
